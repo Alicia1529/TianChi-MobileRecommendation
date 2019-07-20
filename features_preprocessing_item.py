@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime
 import pickle
 
+
 item_file = "fresh_comp_offline/tianchi_fresh_comp_train_item.csv"
 user_file = "fresh_comp_offline/tianchi_fresh_comp_train_user.csv"
 items = pd.read_csv(item_file).sample(frac=1)

@@ -1,0 +1,18 @@
+11.18-12.18 predict 12.19
+
+training data
+11.18-11.24 predict 11.25
+"Nov18_Nov24.csv""Nov25.csv"
+validation data
+11.26-12.2  predict 12.3
+output 
+12.13-12.18 predict 12.19
+
+
+eg
+11.18-11.24
+(user_id, item_id)  as long as it appears
+=> (user_id, item_id, purchase or not)
+(user_id, item_id, purchase or not) merge with information table ->get (user_id, item_id, purchase or not, item_category)
+=> merge with user_table, item_table, category table, user_item_table, user_category_table.
+

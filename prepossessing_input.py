@@ -2,24 +2,23 @@ import pickle
 import pandas as pd
 import numpy as np
 
-user_table_file = "features/u_df.pyc"
-item_table_file = "features/item_table.pyc"
-user_item = "features/ui_df.pyc"
-user_category = "features/uc_df.py"
-user_category_table_file = "features/user_category_frequency.pyc"
-user_item_table_file = "features/user_item_frequency.pyc"
+al_user_table_file = "features/u_df.pyc"
+al_user_item = "features/ui_df.pyc"
+al_user_category = "features/uc_df.py"
+#####item#####alicia
+tl_item_table_file = "features/item_table.pyc"
+tl_category_table_file = "features/category_table.pyc"
+tl_user_item_table_file = "features/user_item_frequency.pyc"
+tl_user_category_table_file = "features/user_category_frequency.pyc"
 
-user_table = pickle.load(open(user_table_file,"rb"))
-user_item = pickle.load(open(user_item,"rb"))
-user_category = pickle.load(open(user_category,"rb"))
-user_item_table = pickle.load(open(user_item_table_file,"rb"))
-item_table = pickle.load(open(item_table_file,"rb"))
-user_category_table= pickle.load(open(user_category_table_file,"rb"))
-print(user_item_table.columns)
-print(user_item_table.head())
-# print(item_table.columns)
-# print(user_item_table.head())
-# print(item_table.head())
+al_user_table = pickle.load(open(al_user_table_file,"rb"))
+al_user_item_table = pickle.load(open(al_user_item,"rb"))
+al_user_category_table = pickle.load(open(al_user_category,"rb"))
+#####item####alicia
+tl_item_table = pickle.load(open(tl_item_table_file,"rb"))
+tl_category_table = pickle.load(open(tl_category_table_file,"rb"))
+tl_user_item_table= pickle.load(open(tl_user_item_table_file,"rb"))
+tl_user_category_table= pickle.load(open(tl_user_category_table_file,"rb"))
 
 #user_item_table contains unique user, item pairs 
 full_table = pd.merge(user_item_table, item_table, how="left", on =["item_id"])
