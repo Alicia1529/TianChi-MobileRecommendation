@@ -1,9 +1,13 @@
 import pandas as pd
 import numpy as np
+from datetime import datetime
 import pickle
 
-user_path = "./fresh_comp_offline/tianchi_fresh_comp_train_user.csv"
+date_range = "Dec13_Dec18"
+
+user_path = "./data/{}.csv".format(date_range)
 user_df = pd.read_csv(user_path)
+user_df["time"] = user_df["time"].map(lambda x:datetime.strptime(x, '%Y-%m-%d %H') )
 # print(user_df.count()[0]) # 23291027
 
 
@@ -37,7 +41,7 @@ ui_df['ui_b3count_mean'] = (ui_df['ui_b3count']-ui_df['ui_b3count_mean'])/ui_df[
 ui_df['ui_b4count_mean'] = (ui_df['ui_b4count']-ui_df['ui_b4count_mean'])/ui_df['ui_b4count_sum']
 ui_df = ui_df[['user_id','item_id','ui_b1count_mean','ui_b2count_mean','ui_b3count_mean','ui_b4count_mean']]
 print(ui_df.head())
-pickle.dump(ui_df, open("./features//ui_df.pyc","wb"))
+pickle.dump(ui_df, open("./features/ui_df_{}.pyc".format(date_range),"wb"))
 
 
 
@@ -71,7 +75,7 @@ uc_df['uc_b3count_mean'] = (uc_df['uc_b3count']-uc_df['uc_b3count_mean'])/uc_df[
 uc_df['uc_b4count_mean'] = (uc_df['uc_b4count']-uc_df['uc_b4count_mean'])/uc_df['uc_b4count_sum']
 uc_df = uc_df[['user_id','item_category','uc_b1count_mean','uc_b2count_mean','uc_b3count_mean','uc_b4count_mean']]
 print(uc_df.head())
-pickle.dump(uc_df, open("./features/uc_df.pyc","wb"))
+pickle.dump(uc_df, open("./features/uc_df_{}.pyc".format(date_range),"wb"))
 
 
 
@@ -96,6 +100,7 @@ user_df_bcount['b24_rate'] = user_df_bcount['u_b4count']/user_df_bcount['u_b2cou
 user_df_bcount['b34_rate'] = user_df_bcount['u_b4count']/user_df_bcount['u_b3count']
 u_df = user_df_bcount[['user_id','b4_rate','b24_rate','b34_rate']]
 
+# 浏览过的购买比例及二次购买比例
 user_df_viewed_item = ui_df_bcount.groupby('user_id')
 total_count = user_df_viewed_item.apply(lambda x: x.count()[0])
 user_df_bought_item = ui_df_bcount[ui_df_bcount['ui_b4count'] > 0].groupby('user_id')
@@ -111,5 +116,38 @@ item_b4_twice_rate.rename(columns = {0:"item_b4_twice_rate"}, inplace=True)
 u_df = pd.merge(u_df, item_b41_rate, how='left', on=['user_id'])
 u_df = pd.merge(u_df, item_b4_twice_rate, how='left', on=['user_id'])
 
-pickle.dump(u_df, open("./features/u_df.pyc","wb"))
+# 平均各类行为与购买的时间
+user_item_first_purchase = user_df[user_df['behavior_type'] ==4 ].groupby(["user_id","item_id"])["time"].min().reset_index(name="user_item_first_purchase")
+user_item_first_view = user_df[user_df['behavior_type'] ==1 ].groupby(["user_id","item_id"])["time"].min().reset_index(name="user_item_first_view")
+user_item_gap_14 = pd.merge(user_item_first_purchase,user_item_first_view,how="inner",on=["user_id","item_id"])
+user_item_gap_14["gap_14"] = user_item_gap_14["user_item_first_purchase"] - user_item_gap_14["user_item_first_view"]
+user_item_gap_14["gap_14"] =user_item_gap_14["gap_14"].map(lambda x:x.days*24+x.seconds//3600)
+user_item_gap_14["gap_14"] =user_item_gap_14["gap_14"].apply(lambda x:0.5 if x==0 else x)
+user_item_gap_14["gap_14"] =user_item_gap_14["gap_14"].map(lambda x:7*24/x)
+user_item_gap_14["gap_14"] =user_item_gap_14["gap_14"].apply(lambda x:1 if x<0 else x)
+user_view_interval = user_item_gap_14.groupby("user_id")["gap_14"].mean().reset_index(name="user_view_interval")
+
+user_item_first_save = user_df[user_df['behavior_type'] ==2 ].groupby(["user_id","item_id"])["time"].min().reset_index(name="user_item_first_save")
+user_item_gap_24 = pd.merge(user_item_first_purchase,user_item_first_save,how="inner",on=["user_id","item_id"])
+user_item_gap_24["gap_24"] = user_item_gap_24["user_item_first_purchase"] - user_item_gap_24["user_item_first_save"]
+user_item_gap_24["gap_24"] = user_item_gap_24["gap_24"].map(lambda x:x.days*24+x.seconds//3600)
+user_item_gap_24["gap_24"] =user_item_gap_24["gap_24"].apply(lambda x:0.5 if x==0 else x)
+user_item_gap_24["gap_24"] =user_item_gap_24["gap_24"].map(lambda x:7*24/x)
+user_item_gap_24["gap_24"] =user_item_gap_24["gap_24"].apply(lambda x:1 if x<0 else x)
+user_save_interval = user_item_gap_24.groupby("user_id")["gap_24"].mean().reset_index(name="user_save_interval")
+
+user_item_first_shoppingcart = user_df[user_df['behavior_type'] ==3 ].groupby(["user_id","item_id"])["time"].min().reset_index(name="user_item_first_shoppingcart")
+user_item_gap_34 = pd.merge(user_item_first_purchase,user_item_first_shoppingcart,how="inner",on=["user_id","item_id"])
+user_item_gap_34["gap_34"] = user_item_gap_34["user_item_first_purchase"] - user_item_gap_34["user_item_first_shoppingcart"]
+user_item_gap_34["gap_34"] = user_item_gap_34["gap_34"].map(lambda x:x.days*24+x.seconds//3600)
+user_item_gap_34["gap_34"] =user_item_gap_34["gap_34"].apply(lambda x:0.5 if x==0 else x)
+user_item_gap_34["gap_34"] =user_item_gap_34["gap_34"].map(lambda x:7*24/x)
+user_item_gap_34["gap_34"] =user_item_gap_34["gap_34"].apply(lambda x:1 if x<0 else x)
+user_shoppingcart_interval = user_item_gap_34.groupby("user_id")["gap_34"].mean().reset_index(name="user_shoppingcart_interval")
+
+u_df = pd.merge(u_df,user_view_interval,on="user_id", how="outer").fillna(0)
+u_df = pd.merge(u_df,user_save_interval,on="user_id", how="outer").fillna(0)
+u_df = pd.merge(u_df,user_shoppingcart_interval,on="user_id", how="outer").fillna(0)
+
+pickle.dump(u_df, open("./features/u_df_{}.pyc".format(date_range),"wb"))
 # print(user_df_bcount.count()[0])

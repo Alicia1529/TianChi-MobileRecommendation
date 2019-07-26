@@ -1,8 +1,9 @@
 11.18-12.18 predict 12.19
 
 training data
-11.18-11.24 predict 11.25
+11.18-11.24(算attributes:user_item_category) 11.25(lable : user_id, item_id, buy or not)
 "Nov18_Nov24.csv""Nov25.csv"
+
 validation data
 11.26-12.2  predict 12.3
 output 
