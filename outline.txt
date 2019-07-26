@@ -1,3 +1,8 @@
+f1.py + features_preprocessing_item.py + prepossessing/getlabelUI.py-> preposessing_input.py -> xgboost_model
+
+
+
+
 11.18-12.18 predict 12.19
 
 training data
