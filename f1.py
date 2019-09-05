@@ -3,14 +3,13 @@ import numpy as np
 from datetime import datetime
 import pickle
 
+# date_range = "Nov18_Nov24"
 date_range = "Dec13_Dec18"
 
 user_path = "./data/{}.csv".format(date_range)
 user_df = pd.read_csv(user_path)
 user_df["time"] = user_df["time"].map(lambda x:datetime.strptime(x, '%Y-%m-%d %H') )
 # print(user_df.count()[0]) # 23291027
-
-
 
 ### ui
 # 每个用户商品对对应的4个量及总量
@@ -43,8 +42,6 @@ ui_df = ui_df[['user_id','item_id','ui_b1count_mean','ui_b2count_mean','ui_b3cou
 print(ui_df.head())
 pickle.dump(ui_df, open("./features/ui_df_{}.pyc".format(date_range),"wb"))
 
-
-
 ### uc
 # 每个用户商品类别对对应的4个量及总量
 user_df['uc_cumcount'] = user_df.groupby(['user_id','item_category','behavior_type']).cumcount()
@@ -76,8 +73,6 @@ uc_df['uc_b4count_mean'] = (uc_df['uc_b4count']-uc_df['uc_b4count_mean'])/uc_df[
 uc_df = uc_df[['user_id','item_category','uc_b1count_mean','uc_b2count_mean','uc_b3count_mean','uc_b4count_mean']]
 print(uc_df.head())
 pickle.dump(uc_df, open("./features/uc_df_{}.pyc".format(date_range),"wb"))
-
-
 
 ### u
 # 每个用户对应的4个量及总量

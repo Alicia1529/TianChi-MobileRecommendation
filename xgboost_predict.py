@@ -29,7 +29,7 @@ dPredict = xgb.DMatrix(data=predict_df[feature_cols].values,feature_names=featur
 y_preds = (model.predict(dPredict) > 0.5).astype(int) 
 print(len(y_preds))
 predict_df["pred_label"] = y_preds 
-predict_df[predict_df['pred_label'] == 1].to_csv("data/prediction_result_0.5_depth25.csv", 
+predict_df[predict_df['pred_label'] == 1].to_csv("data/prediction_result_0.5_depth20_elta0.001_new_features_51columns_noduplicates.csv", 
                                                 columns=['user_id','item_id'],
                                                 index=False, header=True)
 

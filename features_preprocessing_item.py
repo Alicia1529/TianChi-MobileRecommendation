@@ -4,6 +4,8 @@ from datetime import datetime
 import pickle
 
 filename = "Dec13_Dec18"
+prediction_time = "2014-12-19"
+prediction_time = datetime.strptime(prediction_time, '%Y-%m-%d')
 
 item_file = "fresh_comp_offline/tianchi_fresh_comp_train_item.csv"
 user_file = "data/{}.csv".format(filename)
@@ -87,6 +89,22 @@ user_item_gap_34["gap_34"] =user_item_gap_34["gap_34"].apply(lambda x:1 if x<0 e
 item_shoppingcart_interval = user_item_gap_34.groupby("item_id")["gap_34"].mean().reset_index(name="item_shoppingcart_interval")
 
 
+# 商品购买人数占总浏览人数的比值
+# 商品购买人数占总收藏人数的比值
+# 商品购买人数占总加购物车人数的比值
+item_num_purchase = users[users['behavior_type'] ==4 ].groupby(["item_id"])["item_id"].count().reset_index(name="item_num_purchase")
+item_num_view = users[users['behavior_type'] ==1 ].groupby(["item_id"])["item_id"].count().reset_index(name="item_num_view")
+item_num_save = users[users['behavior_type'] ==2 ].groupby(["item_id"])["item_id"].count().reset_index(name="item_num_save")
+item_num_shoppingcart = users[users['behavior_type'] ==3 ].groupby(["item_id"])["item_id"].count().reset_index(name="item_num_shoppingcart")
+item_percentage_table = pd.merge(item_num_purchase,item_num_view,on="item_id",how="outer").fillna(0)
+item_percentage_table = pd.merge(item_percentage_table,item_num_save,on="item_id",how="outer").fillna(0)
+item_percentage_table = pd.merge(item_percentage_table,item_num_shoppingcart,on="item_id",how="outer").fillna(0)
+item_percentage_table["percent_41"] = item_percentage_table["item_num_purchase"]/item_percentage_table["item_num_view"]
+item_percentage_table["percent_42"] = item_percentage_table["item_num_purchase"]/item_percentage_table["item_num_save"]
+item_percentage_table["percent_43"] = item_percentage_table["item_num_purchase"]/item_percentage_table["item_num_shoppingcart"]
+item_percentage_table = item_percentage_table.replace([np.inf, -np.inf], np.nan).fillna(0)[["item_id","percent_41","percent_42","percent_43"]]
+
+
 
 # a table for all items 
 item_table = pd.merge(item_table_view,item_table_save,on="item_id", how="outer").fillna(0)
@@ -96,6 +114,7 @@ item_table = pd.merge(item_table,item_table_purchase,on="item_id", how="outer").
 item_table = pd.merge(item_table,item_view_interval,on="item_id", how="outer").fillna(0)
 item_table = pd.merge(item_table,item_save_interval,on="item_id", how="outer").fillna(0)
 item_table = pd.merge(item_table,item_shoppingcart_interval,on="item_id", how="outer").fillna(0)
+item_table = pd.merge(item_table,item_percentage_table, on="item_id", how="outer").fillna(0)
 print(item_table.head())
 path = "features/item_table_{}.pyc".format(filename)
 pickle.dump(item_table, open(path,"wb"))
@@ -118,11 +137,47 @@ user_item_table["UI_purchase_duration_hour"] = (user_item_table["max"]-user_item
 
 user_item_table["UI_purchase_duration_hour"] = user_item_table["UI_purchase_duration_hour"].map(lambda x:x.days*24+x.seconds//3600)
 user_item_table["UI_purchase_duration_hour"] = user_item_table["UI_purchase_duration_hour"].apply(lambda x: 24*50 if x == 0 else x)
-user_item_table = user_item_table.sort_values("UI_purchase_duration_hour",ascending=True)
-
 user_item_table = user_item_table[["user_id","item_id","UI_purchase_duration_hour"]]
 
-path = "features/user_item_frequency_{}.pyc".format(filename)
+# 商品最后一次被浏览-预测时间的间隔
+# 商品最后一次收藏-预测时间的间隔
+# 商品最后一次添加购物册-预测时间的间隔
+user_item_last_view = users[users['behavior_type'] ==1 ].groupby(["user_id","item_id"])["time"].max().reset_index(name="user_item_last_view")
+user_item_last_view["user_item_last_view_predict"] = prediction_time-user_item_last_view["user_item_last_view"]
+user_item_last_view["user_item_last_view_predict"] = user_item_last_view["user_item_last_view_predict"].apply(lambda x:x.days*24+x.seconds//3600)
+
+user_item_last_save = users[users['behavior_type'] ==2 ].groupby(["user_id","item_id"])["time"].max().reset_index(name="user_item_last_save")
+user_item_last_save["user_item_last_save_predict"] = prediction_time-user_item_last_save["user_item_last_save"]
+user_item_last_save["user_item_last_save_predict"] = user_item_last_save["user_item_last_save_predict"].apply(lambda x:x.days*24+x.seconds//3600)
+user_item_last_shoppingcart = users[users['behavior_type'] ==3 ].groupby(["user_id","item_id"])["time"].max().reset_index(name="user_item_last_shoppingcart")
+user_item_last_shoppingcart["user_item_last_shoppingcart_predict"] = prediction_time-user_item_last_shoppingcart["user_item_last_shoppingcart"]
+user_item_last_shoppingcart["user_item_last_shoppingcart_predict"] = user_item_last_shoppingcart["user_item_last_shoppingcart_predict"].apply(lambda x:x.days*24+x.seconds//3600)
+# if add it to shopping cart one day before prediction day and didn't purchase
+# first: put to shopping cart 
+user_item_last_shoppingcart["user_item_shoppingcart_1_day"]  = user_item_last_shoppingcart["user_item_last_shoppingcart_predict"].apply(lambda x : 1 if x<24 and x>0 else 0 )
+
+user_shoppingcart = user_item_last_shoppingcart[user_item_last_shoppingcart["user_item_shoppingcart_1_day"] ==1 ][["user_id","item_id"]]
+# second: purchased at the last day 
+user_purchased =  users[users['behavior_type'] ==4 ].groupby(["user_id","item_id"])["time"].max().reset_index(name="last_purchase_time")
+user_purchased["user_item_last_day_purchase"] = prediction_time - user_purchased["last_purchase_time"]
+user_purchased["user_item_last_day_purchase"] = user_purchased["user_item_last_day_purchase"].apply(lambda x: 1 if x.days*24+x.seconds//3600<24 and  x.days*24+x.seconds//3600> 0 else 0)
+user_purchased = user_purchased[user_purchased["user_item_last_day_purchase"] ==1][["user_id","item_id"]]
+ds1 = set([tuple(line) for line in user_shoppingcart.values])
+ds2 = set([tuple(line) for line in user_purchased.values])
+ds3 = ds1.difference(ds2) #shoppingcart&not purchase
+
+shoppingcart_not_purchase = pd.DataFrame(list(ds1.difference(ds2)))
+shoppingcart_not_purchase.columns =  ["user_id","item_id"]
+shoppingcart_not_purchase["shoppingcart_notpurchase"] = 1
+
+#fixme : fill value
+user_item_table = pd.merge(user_item_table,user_item_last_view,on=["user_id", "item_id"], how="outer").fillna(0)
+user_item_table = pd.merge(user_item_table,user_item_last_save,on=["user_id", "item_id"], how="outer").fillna(0)
+user_item_table = pd.merge(user_item_table,user_item_last_shoppingcart,on=["user_id", "item_id"], how="outer").fillna(0)
+user_item_table = pd.merge(user_item_table,shoppingcart_not_purchase,on=["user_id", "item_id"], how="outer").fillna(0)
+user_item_table =user_item_table[["user_id","item_id","UI_purchase_duration_hour","user_item_last_view_predict","user_item_last_save_predict","user_item_last_shoppingcart_predict","shoppingcart_notpurchase"]]
+
+path = "features/user_item_table_{}.pyc".format(filename)
 pickle.dump(user_item_table, open(path,"wb"))
 
 
@@ -170,6 +225,30 @@ user_category_table["UC_purchase_duration_hour"] = user_category_table["UC_purch
 user_category_table = user_category_table.sort_values("UC_purchase_duration_hour",ascending=True)
 
 user_category_table = user_category_table[["user_id","item_category","UC_purchase_duration_hour"]]
+# 类别最后一次被浏览-预测时间的间隔
+# 类别最后一次收藏-预测时间的间隔
+# 类别最后一次添加购物册-预测时间的间隔
 
-path = "features/user_category_frequency_{}.pyc".format(filename)
+user_category_last_view = users[users['behavior_type'] ==1 ].groupby(["user_id","item_category"])["time"].max().reset_index(name="user_category_last_view")
+user_category_last_view["user_category_last_view_predict"] = prediction_time-user_category_last_view["user_category_last_view"]
+user_category_last_view["user_category_last_view_predict"] = user_category_last_view["user_category_last_view_predict"].apply(lambda x:x.days*24+x.seconds//3600)
+
+user_category_last_save = users[users['behavior_type'] ==2 ].groupby(["user_id","item_category"])["time"].max().reset_index(name="user_category_last_save")
+user_category_last_save["user_category_last_save_predict"] = prediction_time-user_category_last_save["user_category_last_save"]
+user_category_last_save["user_category_last_save_predict"] = user_category_last_save["user_category_last_save_predict"].apply(lambda x:x.days*24+x.seconds//3600)
+
+
+user_category_last_shoppingcart = users[users['behavior_type'] ==3 ].groupby(["user_id","item_category"])["time"].max().reset_index(name="user_category_last_shoppingcart")
+user_category_last_shoppingcart["user_category_last_shoppingcart_predict"] = prediction_time-user_category_last_shoppingcart["user_category_last_shoppingcart"]
+user_category_last_shoppingcart["user_category_last_shoppingcart_predict"] = user_category_last_shoppingcart["user_category_last_shoppingcart_predict"].apply(lambda x:x.days*24+x.seconds//3600)
+
+#fixme : fill value
+user_category_table = pd.merge(user_category_table,user_category_last_view,on=["user_id", "item_category"], how="outer").fillna(0)
+user_category_table = pd.merge(user_category_table,user_category_last_save,on=["user_id", "item_category"], how="outer").fillna(0)
+user_category_table = pd.merge(user_category_table,user_category_last_shoppingcart,on=["user_id", "item_category"], how="outer").fillna(0)
+user_category_table =user_category_table[["user_id","item_category","UC_purchase_duration_hour","user_category_last_view_predict","user_category_last_save_predict","user_category_last_shoppingcart_predict"]]
+
+
+
+path = "features/user_category_table_{}.pyc".format(filename)
 pickle.dump(user_category_table, open(path,"wb"))

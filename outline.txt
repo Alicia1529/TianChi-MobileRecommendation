@@ -1,8 +1,5 @@
 f1.py + features_preprocessing_item.py + prepossessing/getlabelUI.py-> preposessing_input.py -> xgboost_model
 
-
-
-
 11.18-12.18 predict 12.19
 
 training data
@@ -22,3 +19,37 @@ eg
 (user_id, item_id, purchase or not) merge with information table ->get (user_id, item_id, purchase or not, item_category)
 => merge with user_table, item_table, category table, user_item_table, user_category_table.
 
+
+1. add to shoppingcart one day before prediction and didn't buy at that day 0/1 dummy
+2. 12.13-12.16->12.17     12.14-12.17->12.18  
+3. parameters
+4. 数据不平衡问题
+
+
+
+
+Hi professor,
+
+Hope you are doing well in New York!
+
+During the past week, we contructed 20 more features and improved our f1 score to 0.077, which is ranked on 73 over 11077 participants.
+
+We also tried to implemented a distributed version of xgboost in Spark, but sicne the amount of data is not that large, it makes no difference if it's running parallelly.
+
+However, we met several problems during this process and feel quite confused. 
+    First the hyper-parameters gotten from cross validation is different from the one we get from validation set directly, and the hyperparameters given by the validation set is much better than the cross-validation method. We haven't figured out why
+    Secondly, we are trying another totally different approach to make prediction and it has nothing to do with machine learning. We are still waiting for the platform to give the feedback. But the result might be better than we think.
+
+We would like to get feedback and advice from you about our current work. We also wonder if you can give us some guidelines on what to do next.
+
+If you are not convenient for skype meeting, we wonder if you are available for meeting in person at Tandon sometime this week?
+
+Thanks so much for your help and hope you have a nice day!
+
+Best,
+Ting and Anqi
+
+
+ currently our algorithm reaches 
+
+Currently our recommendation model reaches an 

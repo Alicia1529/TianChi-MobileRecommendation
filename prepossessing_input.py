@@ -3,10 +3,17 @@ import pandas as pd
 import numpy as np
 
 
-label_data_name = "Dec13_Dec18"
-feature_data_name = "Dec13_Dec18"
-output_data_name = "Dec13_Dec18"
+# label_data_name = "Dec13_Dec18"
+# feature_data_name = "Dec13_Dec18"
+# output_data_name = "Dec13_Dec18"
 
+# label_data_name = "Dec3"
+# feature_data_name = "Nov26_Dec2"
+# output_data_name = "Nov26_Dec3"
+
+label_data_name = "Nov25"
+feature_data_name = "Nov18_Nov24"
+output_data_name = "Nov18_Nov25"
 
 al_user_table_file = "features/u_df_{}.pyc".format(feature_data_name)
 al_user_item = "features/ui_df_{}.pyc".format(feature_data_name)
@@ -14,8 +21,8 @@ al_user_category = "features/uc_df_{}.pyc".format(feature_data_name)
 #####item#####alicia
 tl_item_table_file = "features/item_table_{}.pyc".format(feature_data_name)
 tl_category_table_file = "features/category_table_{}.pyc".format(feature_data_name)
-tl_user_item_table_file = "features/user_item_frequency_{}.pyc".format(feature_data_name)
-tl_user_category_table_file = "features/user_category_frequency_{}.pyc".format(feature_data_name)
+tl_user_item_table_file = "features/user_item_table_{}.pyc".format(feature_data_name)
+tl_user_category_table_file = "features/user_category_table_{}.pyc".format(feature_data_name)
 
 al_user_table = pickle.load(open(al_user_table_file,"rb"))
 print("al_user_table.columns")
